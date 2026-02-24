@@ -481,6 +481,10 @@ h1 {
                 <option value="8">8</option>
             </select>
         </div>
+        <div class="decks-row" style="margin-top:6px">
+            <label>Масти:</label>
+            <button class="ctrl-btn" id="suitToggle" onclick="toggleSuits()" style="flex:0;padding:4px 12px;font-size:12px">ВКЛ</button>
+        </div>
         <div class="deck-estimate" id="deckEstimate"></div>
     </div>
 
@@ -729,13 +733,25 @@ let splitMode = false;
 let splitHands = [[], []];
 let currentSplitHand = 0;
 let splitDeclined = false;
+let suitsEnabled = true;
 
 // =====================================================================
 // ФУНКЦИИ UI
 // =====================================================================
 
 function selectRank(rank) {
-    pendingRank = rank;
+    if (suitsEnabled) {
+        pendingRank = rank;
+        updateUI();
+    } else {
+        addCard(rank);
+    }
+}
+
+function toggleSuits() {
+    suitsEnabled = !suitsEnabled;
+    pendingRank = null;
+    document.getElementById('suitToggle').textContent = suitsEnabled ? 'ВКЛ' : 'ВЫКЛ';
     updateUI();
 }
 
