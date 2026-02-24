@@ -582,16 +582,16 @@ let stats = { hands: 0, wins: 0, losses: 0, pushes: 0 };
 // =====================================================================
 
 function addCard(rank) {
-    if (inputMode === 'dealer' && dealerCards.length === 0) {
+    let target = inputMode;
+    if (inputMode === 'dealer') {
         dealerCards.push(rank);
-        inputMode = 'player';
     } else if (inputMode === 'others') {
         othersCards.push(rank);
     } else {
+        target = 'player';
         playerCards.push(rank);
-        inputMode = 'player';
     }
-    allHandCards.push(rank);
+    allHandCards.push({ rank, target });
     addToCounter(rank);
     updateUI();
     // Вибрация
@@ -602,16 +602,15 @@ function addCard(rank) {
 
 function undoCard() {
     if (allHandCards.length === 0) return;
-    const removed = allHandCards.pop();
-    removeFromCounter(removed);
+    const lastEntry = allHandCards.pop();
+    removeFromCounter(lastEntry.rank);
 
-    if (inputMode === 'others' && othersCards.length > 0) {
-        othersCards.pop();
-    } else if (playerCards.length > 0) {
-        playerCards.pop();
-    } else if (dealerCards.length > 0) {
+    if (lastEntry.target === 'dealer') {
         dealerCards.pop();
-        inputMode = 'dealer';
+    } else if (lastEntry.target === 'others') {
+        othersCards.pop();
+    } else {
+        playerCards.pop();
     }
     updateUI();
 }
