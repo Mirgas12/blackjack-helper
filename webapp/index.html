@@ -389,7 +389,6 @@ h1 {
     <div class="recommendation rec-waiting" id="recBox">
         <div class="rec-action" id="recAction">Введите карты</div>
         <div class="rec-explain" id="recExplain"></div>
-        <div id="dealerHint" style="display:none;font-size:11px;color:#f39c12;margin-top:6px">Введите все карты дилера для точного счёта!</div>
     </div>
 
     <!-- Подтверждение сплита -->
@@ -562,6 +561,12 @@ const PAIRS = {
     11:{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'P',9:'P',10:'P',11:'P'},
 };
 
+// Коррекция стратегии для 1-2 колод (отличия от 4+ колод, S17 DAS)
+const DECK_OVERRIDES = {
+    1: { hard:{'8_5':'D','8_6':'D','9_2':'D','11_11':'D'}, soft:{'19_6':'D'}, pairs:{'6_7':'P'} },
+    2: { hard:{'9_2':'D','11_11':'D'}, soft:{}, pairs:{} }
+};
+
 const ACTION_RU = { H:'ЕЩЁ', S:'ХВАТИТ', D:'ДАБЛ', P:'СПЛИТ' };
 
 function getRecommendation(playerCards, dealerUpcard, skipSplit, tc) {
@@ -585,6 +590,11 @@ function getRecommendation(playerCards, dealerUpcard, skipSplit, tc) {
             if (dv === 5 && tc >= 5) return { action:'P', ru:ACTION_RU.P, explain:'TC≥5: разделяй десятки против 5!', total, isSoft };
             if (dv === 6 && tc >= 4) return { action:'P', ru:ACTION_RU.P, explain:'TC≥4: разделяй десятки против 6!', total, isSoft };
         }
+        // Коррекция пар для 1-2 колод
+        const pOvr = DECK_OVERRIDES[totalDecks];
+        if (pOvr && pOvr.pairs[pv+'_'+dv] === 'P') {
+            return { action:'P', ru:ACTION_RU.P, explain:pairExplain(pv, dv), total, isSoft };
+        }
         const pa = PAIRS[pv] && PAIRS[pv][dv];
         if (pa === 'P') {
             return { action:'P', ru:ACTION_RU.P, explain:pairExplain(pv, dv), total, isSoft };
@@ -597,6 +607,14 @@ function getRecommendation(playerCards, dealerUpcard, skipSplit, tc) {
         action = HARD[total][dv] || 'H';
     } else {
         action = total >= 17 ? 'S' : 'H';
+    }
+
+    // Коррекция для 1-2 колод
+    const ovr = DECK_OVERRIDES[totalDecks];
+    if (ovr) {
+        const key = total + '_' + dv;
+        const oa = isSoft ? ovr.soft[key] : ovr.hard[key];
+        if (oa) action = oa;
     }
 
     // Если дабл невозможен (3+ карт): soft 18+ → стоим, остальное → берём
@@ -978,6 +996,11 @@ function updateUI() {
         box.className = 'recommendation rec-' +
             ({H:'hit',S:'stand',D:'double',P:'split',BUST:'bust'}[rec.action] || 'waiting');
 
+        // Страховка при TC >= 3 и дилер с тузом
+        if (cardValue(dealerCards[0]) === 11 && trueCount() >= 3) {
+            expEl.textContent = 'СТРАХОВКА! (TC\u22653) | ' + expEl.textContent;
+        }
+
         // Показать кнопки подтверждения сплита
         if (rec.action === 'P' && !splitMode && !splitDeclined) {
             splitConfirmEl.className = 'split-confirm visible';
@@ -998,11 +1021,6 @@ function updateUI() {
         expEl.textContent = '';
         box.className = 'recommendation rec-waiting';
     }
-
-    // Подсказка: ввести финальные карты дилера
-    const dealerHint = document.getElementById('dealerHint');
-    const handInProgress = hasEnoughCards || splitMode;
-    dealerHint.style.display = (dealerCards.length === 1 && handInProgress) ? 'block' : 'none';
 
     // Режимы
     ['Dealer','Player','Others'].forEach(m => {
