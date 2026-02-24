@@ -389,6 +389,7 @@ h1 {
     <div class="recommendation rec-waiting" id="recBox">
         <div class="rec-action" id="recAction">Введите карты</div>
         <div class="rec-explain" id="recExplain"></div>
+        <div id="dealerHint" style="display:none;font-size:11px;color:#f39c12;margin-top:6px">Введите все карты дилера для точного счёта!</div>
     </div>
 
     <!-- Подтверждение сплита -->
@@ -563,12 +564,12 @@ const PAIRS = {
 
 const ACTION_RU = { H:'ЕЩЁ', S:'ХВАТИТ', D:'ДАБЛ', P:'СПЛИТ' };
 
-function getRecommendation(playerCards, dealerUpcard) {
+function getRecommendation(playerCards, dealerUpcard, skipSplit, tc) {
     const dv = cardValue(dealerUpcard);
     const {total, isSoft} = handValue(playerCards);
     const pair = isPair(playerCards);
     const canDouble = playerCards.length === 2;
-    const canSplit = pair;
+    const canSplit = pair && !skipSplit;
 
     if (total === 21 && playerCards.length === 2)
         return { action:'S', ru:'БЛЭКДЖЕК!', explain:'Поздравляю!', total, isSoft };
@@ -579,6 +580,11 @@ function getRecommendation(playerCards, dealerUpcard) {
 
     if (pair && canSplit) {
         const pv = cardValue(playerCards[0]);
+        // TC-девиация: сплит десяток при высоком счёте
+        if (pv === 10 && tc !== undefined) {
+            if (dv === 5 && tc >= 5) return { action:'P', ru:ACTION_RU.P, explain:'TC≥5: разделяй десятки против 5!', total, isSoft };
+            if (dv === 6 && tc >= 4) return { action:'P', ru:ACTION_RU.P, explain:'TC≥4: разделяй десятки против 6!', total, isSoft };
+        }
         const pa = PAIRS[pv] && PAIRS[pv][dv];
         if (pa === 'P') {
             return { action:'P', ru:ACTION_RU.P, explain:pairExplain(pv, dv), total, isSoft };
@@ -593,7 +599,33 @@ function getRecommendation(playerCards, dealerUpcard) {
         action = total >= 17 ? 'S' : 'H';
     }
 
-    if (action === 'D' && !canDouble) action = 'H';
+    // Если дабл невозможен (3+ карт): soft 18+ → стоим, остальное → берём
+    if (action === 'D' && !canDouble) action = (isSoft && total >= 18) ? 'S' : 'H';
+
+    // Illustrious 18 — девиации на основе True Count
+    let devExplain = null;
+    if (!isSoft && tc !== undefined) {
+        // Стоим при высоком счёте (колода богата десятками)
+        if      (total === 16 && dv === 10 && tc >= 0 && action === 'H') { action = 'S'; devExplain = 'TC≥0: стоим с 16 против 10'; }
+        else if (total === 15 && dv === 10 && tc >= 4 && action === 'H') { action = 'S'; devExplain = 'TC≥4: стоим с 15 против 10'; }
+        else if (total === 12 && dv === 3  && tc >= 2 && action === 'H') { action = 'S'; devExplain = 'TC≥2: стоим с 12 против 3'; }
+        else if (total === 12 && dv === 2  && tc >= 3 && action === 'H') { action = 'S'; devExplain = 'TC≥3: стоим с 12 против 2'; }
+        else if (total === 16 && dv === 9  && tc >= 5 && action === 'H') { action = 'S'; devExplain = 'TC≥5: стоим с 16 против 9'; }
+        // Удваиваем при высоком счёте
+        else if (total === 10 && dv === 10 && tc >= 4 && canDouble) { action = 'D'; devExplain = 'TC≥4: удваиваем 10 против 10'; }
+        else if (total === 10 && dv === 11 && tc >= 4 && canDouble) { action = 'D'; devExplain = 'TC≥4: удваиваем 10 против A'; }
+        else if (total === 11 && dv === 11 && tc >= 1 && canDouble) { action = 'D'; devExplain = 'TC≥1: удваиваем 11 против A'; }
+        else if (total === 9  && dv === 2  && tc >= 1 && canDouble) { action = 'D'; devExplain = 'TC≥1: удваиваем 9 против 2'; }
+        else if (total === 9  && dv === 7  && tc >= 3 && canDouble) { action = 'D'; devExplain = 'TC≥3: удваиваем 9 против 7'; }
+        // Берём при низком счёте (колода богата мелкими)
+        else if (total === 13 && dv === 2 && tc < -1 && action === 'S') { action = 'H'; devExplain = 'TC<-1: берём с 13 против 2'; }
+        else if (total === 12 && dv === 4 && tc < 0  && action === 'S') { action = 'H'; devExplain = 'TC<0: берём с 12 против 4'; }
+        else if (total === 12 && dv === 5 && tc < -2 && action === 'S') { action = 'H'; devExplain = 'TC<-2: берём с 12 против 5'; }
+        else if (total === 12 && dv === 6 && tc < -1 && action === 'S') { action = 'H'; devExplain = 'TC<-1: берём с 12 против 6'; }
+        else if (total === 13 && dv === 3 && tc < -2 && action === 'S') { action = 'H'; devExplain = 'TC<-2: берём с 13 против 3'; }
+    }
+
+    if (devExplain) return { action, ru: ACTION_RU[action], explain: devExplain, total, isSoft };
 
     const ht = isSoft ? 'Soft' : 'Hard';
     const ds = dv === 11 ? 'A' : dv;
@@ -740,6 +772,9 @@ function undoCard() {
 
     if (lastEntry.target === 'dealer') {
         dealerCards.pop();
+        if (dealerCards.length === 0) {
+            inputMode = 'dealer';
+        }
     } else if (lastEntry.target === 'others') {
         othersCards.pop();
     } else if (lastEntry.target === 'split0') {
@@ -757,6 +792,16 @@ function confirmSplit() {
     splitMode = true;
     splitHands = [[playerCards[0]], [playerCards[1]]];
     currentSplitHand = 0;
+
+    // Обновить targets в allHandCards: последние 2 записи 'player' → 'split1' и 'split0'
+    let found = 0;
+    for (let i = allHandCards.length - 1; i >= 0 && found < 2; i--) {
+        if (allHandCards[i].target === 'player') {
+            allHandCards[i].target = found === 0 ? 'split1' : 'split0';
+            found++;
+        }
+    }
+
     playerCards = [];
     splitDeclined = false;
     inputMode = 'player';
@@ -926,7 +971,7 @@ function updateUI() {
     const hasEnoughCards = currentCards.length >= 2;
 
     if (dealerCards.length >= 1 && hasEnoughCards) {
-        const rec = getRecommendation(currentCards, dealerCards[0]);
+        const rec = getRecommendation(currentCards, dealerCards[0], splitDeclined, trueCount());
         const prefix = splitMode ? `Рука ${currentSplitHand + 1}: ` : '';
         actEl.textContent = `>> ${rec.ru} <<`;
         expEl.textContent = prefix + rec.explain;
@@ -953,6 +998,11 @@ function updateUI() {
         expEl.textContent = '';
         box.className = 'recommendation rec-waiting';
     }
+
+    // Подсказка: ввести финальные карты дилера
+    const dealerHint = document.getElementById('dealerHint');
+    const handInProgress = hasEnoughCards || splitMode;
+    dealerHint.style.display = (dealerCards.length === 1 && handInProgress) ? 'block' : 'none';
 
     // Режимы
     ['Dealer','Player','Others'].forEach(m => {
