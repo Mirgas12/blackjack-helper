@@ -28,7 +28,6 @@ h1 {
     letter-spacing: 1px;
 }
 
-/* Секции */
 .section {
     background: rgba(255,255,255,0.05);
     border-radius: 10px;
@@ -36,15 +35,6 @@ h1 {
     margin-bottom: 8px;
 }
 
-.section-title {
-    font-size: 11px;
-    color: #7f8c8d;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-}
-
-/* Карты дилера/игрока */
 .hand-row {
     display: flex;
     align-items: center;
@@ -56,12 +46,14 @@ h1 {
 .hand-label {
     font-size: 13px;
     font-weight: 600;
-    min-width: 55px;
+    min-width: 65px;
 }
 
 .hand-label.dealer { color: #e74c3c; }
 .hand-label.player { color: #2ecc71; }
 .hand-label.others { color: #9b59b6; }
+.hand-label.split-active { color: #2ecc71; }
+.hand-label.split-inactive { color: #555; }
 
 .hand-cards {
     display: flex;
@@ -72,8 +64,8 @@ h1 {
 .card-chip {
     background: rgba(255,255,255,0.1);
     border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 14px;
+    padding: 4px 6px;
+    font-size: 13px;
     font-weight: 700;
     min-width: 28px;
     text-align: center;
@@ -83,6 +75,18 @@ h1 {
     margin-left: auto;
     font-size: 13px;
     color: #bdc3c7;
+}
+
+/* Split hand rows */
+.split-hand {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 6px;
+    transition: background 0.15s;
+}
+
+.split-hand.active {
+    background: rgba(46,204,113,0.08);
 }
 
 /* Рекомендация */
@@ -119,8 +123,37 @@ h1 {
 .rec-split { border: 2px solid #f39c12; }
 .rec-split .rec-action { color: #f39c12; }
 
+.rec-bust { border: 2px solid #e74c3c; background: rgba(231,76,60,0.15); }
+.rec-bust .rec-action { color: #e74c3c; }
+
 .rec-waiting { border: 1px solid rgba(255,255,255,0.1); }
 .rec-waiting .rec-action { color: #7f8c8d; font-size: 16px; }
+
+/* Split confirm */
+.split-confirm {
+    display: none;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.split-confirm.visible { display: flex; }
+
+.split-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid;
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.split-btn:active { opacity: 0.7; }
+.split-btn.yes { color: #f39c12; border-color: #f39c12; background: rgba(243,156,18,0.1); }
+.split-btn.no { color: #7f8c8d; border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); }
 
 /* Счётчик */
 .counter-row {
@@ -180,6 +213,7 @@ h1 {
     grid-template-columns: repeat(9, 1fr);
     gap: 4px;
     margin-bottom: 6px;
+    transition: opacity 0.15s;
 }
 
 .card-btn {
@@ -196,17 +230,45 @@ h1 {
 
 .card-btn:active { transform: scale(0.93); }
 
-/* Hi-Lo цвета */
-.card-lo { background: rgba(46,204,113,0.15); color: #2ecc71; } /* +1 */
-.card-mid { background: rgba(255,255,255,0.05); color: #bdc3c7; } /* 0 */
-.card-hi { background: rgba(231,76,60,0.15); color: #e74c3c; } /* -1 */
+.card-lo { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.card-mid { background: rgba(255,255,255,0.05); color: #bdc3c7; }
+.card-hi { background: rgba(231,76,60,0.15); color: #e74c3c; }
 
 .card-grid-row2 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     margin-bottom: 8px;
+    transition: opacity 0.15s;
 }
+
+/* Кнопки мастей */
+.suit-row {
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.suit-row.visible { display: grid; }
+
+.suit-btn {
+    padding: 14px 0;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.15);
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.1s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.suit-btn:active { transform: scale(0.93); }
+.suit-btn.red { background: rgba(231,76,60,0.15); color: #e74c3c; border-color: rgba(231,76,60,0.3); }
+.suit-btn.black { background: rgba(255,255,255,0.08); color: #e0e0e0; }
+
+.dimmed { opacity: 0.25; pointer-events: none; }
 
 /* Управление */
 .ctrl-row {
@@ -255,7 +317,6 @@ h1 {
 .result-btn.push { color: #f39c12; border-color: #f39c12; }
 .result-btn:active { opacity: 0.7; }
 
-/* Колоды */
 .decks-row {
     display: flex;
     align-items: center;
@@ -273,7 +334,13 @@ h1 {
     font-size: 13px;
 }
 
-/* Статистика */
+.deck-estimate {
+    font-size: 12px;
+    color: #f39c12;
+    margin-top: 6px;
+    display: none;
+}
+
 .stats {
     text-align: center;
     font-size: 12px;
@@ -293,11 +360,24 @@ h1 {
             <div class="hand-cards" id="dealerCards"></div>
             <span class="hand-total" id="dealerTotal"></span>
         </div>
-        <div class="hand-row">
+        <!-- Обычный режим -->
+        <div class="hand-row" id="playerRow">
             <span class="hand-label player">Мои:</span>
             <div class="hand-cards" id="playerCards"></div>
             <span class="hand-total" id="playerTotal"></span>
         </div>
+        <!-- Сплит режим -->
+        <div class="hand-row split-hand" id="splitRow1" style="display:none" onclick="switchSplitHand(0)">
+            <span class="hand-label split-active" id="splitLabel1">Рука 1 ▸</span>
+            <div class="hand-cards" id="splitCards1"></div>
+            <span class="hand-total" id="splitTotal1"></span>
+        </div>
+        <div class="hand-row split-hand" id="splitRow2" style="display:none" onclick="switchSplitHand(1)">
+            <span class="hand-label split-inactive" id="splitLabel2">Рука 2:</span>
+            <div class="hand-cards" id="splitCards2"></div>
+            <span class="hand-total" id="splitTotal2"></span>
+        </div>
+        <!-- Чужие -->
         <div class="hand-row" id="othersRow" style="display:none">
             <span class="hand-label others">Чужие:</span>
             <div class="hand-cards" id="othersCards"></div>
@@ -309,6 +389,12 @@ h1 {
     <div class="recommendation rec-waiting" id="recBox">
         <div class="rec-action" id="recAction">Введите карты</div>
         <div class="rec-explain" id="recExplain"></div>
+    </div>
+
+    <!-- Подтверждение сплита -->
+    <div class="split-confirm" id="splitConfirm">
+        <button class="split-btn yes" onclick="confirmSplit()">Сделал сплит</button>
+        <button class="split-btn no" onclick="declineSplit()">Нет</button>
     </div>
 
     <!-- Счётчик -->
@@ -345,22 +431,30 @@ h1 {
     </div>
 
     <!-- Кнопки карт -->
-    <div class="card-grid">
-        <div class="card-btn card-lo" onclick="addCard('2')">2</div>
-        <div class="card-btn card-lo" onclick="addCard('3')">3</div>
-        <div class="card-btn card-lo" onclick="addCard('4')">4</div>
-        <div class="card-btn card-lo" onclick="addCard('5')">5</div>
-        <div class="card-btn card-lo" onclick="addCard('6')">6</div>
-        <div class="card-btn card-mid" onclick="addCard('7')">7</div>
-        <div class="card-btn card-mid" onclick="addCard('8')">8</div>
-        <div class="card-btn card-mid" onclick="addCard('9')">9</div>
-        <div class="card-btn card-hi" onclick="addCard('10')">10</div>
+    <div class="card-grid" id="cardGrid">
+        <div class="card-btn card-lo" onclick="selectRank('2')">2</div>
+        <div class="card-btn card-lo" onclick="selectRank('3')">3</div>
+        <div class="card-btn card-lo" onclick="selectRank('4')">4</div>
+        <div class="card-btn card-lo" onclick="selectRank('5')">5</div>
+        <div class="card-btn card-lo" onclick="selectRank('6')">6</div>
+        <div class="card-btn card-mid" onclick="selectRank('7')">7</div>
+        <div class="card-btn card-mid" onclick="selectRank('8')">8</div>
+        <div class="card-btn card-mid" onclick="selectRank('9')">9</div>
+        <div class="card-btn card-hi" onclick="selectRank('10')">10</div>
     </div>
-    <div class="card-grid-row2">
-        <div class="card-btn card-hi" onclick="addCard('J')">J</div>
-        <div class="card-btn card-hi" onclick="addCard('Q')">Q</div>
-        <div class="card-btn card-hi" onclick="addCard('K')">K</div>
-        <div class="card-btn card-hi" onclick="addCard('A')">A</div>
+    <div class="card-grid-row2" id="cardGridRow2">
+        <div class="card-btn card-hi" onclick="selectRank('J')">J</div>
+        <div class="card-btn card-hi" onclick="selectRank('Q')">Q</div>
+        <div class="card-btn card-hi" onclick="selectRank('K')">K</div>
+        <div class="card-btn card-hi" onclick="selectRank('A')">A</div>
+    </div>
+
+    <!-- Выбор масти -->
+    <div class="suit-row" id="suitRow">
+        <div class="suit-btn black" onclick="selectSuit('\u2660')" id="suitS"></div>
+        <div class="suit-btn black" onclick="selectSuit('\u2663')" id="suitC"></div>
+        <div class="suit-btn red" onclick="selectSuit('\u2665')" id="suitH"></div>
+        <div class="suit-btn red" onclick="selectSuit('\u2666')" id="suitD"></div>
     </div>
 
     <!-- Управление -->
@@ -387,9 +481,9 @@ h1 {
                 <option value="8">8</option>
             </select>
         </div>
+        <div class="deck-estimate" id="deckEstimate"></div>
     </div>
 
-    <!-- Статистика -->
     <div class="stats" id="statsLine">Сессия: 0 рук</div>
 </div>
 
@@ -398,8 +492,12 @@ h1 {
 // СТРАТЕГИЯ
 // =====================================================================
 
+function getRank(card) {
+    return card.replace(/[\u2660\u2663\u2665\u2666]/g, '');
+}
+
 function cardValue(rank) {
-    rank = rank.toUpperCase().trim();
+    rank = getRank(rank).toUpperCase().trim();
     if (['10','J','Q','K','T'].includes(rank)) return 10;
     if (['A','ACE'].includes(rank)) return 11;
     const n = parseInt(rank);
@@ -407,7 +505,7 @@ function cardValue(rank) {
 }
 
 function handValue(cards) {
-    let values = cards.map(cardValue);
+    let values = cards.map(c => cardValue(c));
     let total = values.reduce((a,b) => a+b, 0);
     let aces = values.filter(v => v === 11).length;
     while (total > 21 && aces > 0) { total -= 10; aces--; }
@@ -418,7 +516,6 @@ function isPair(cards) {
     return cards.length === 2 && cardValue(cards[0]) === cardValue(cards[1]);
 }
 
-// Таблицы: [сумма][карта_дилера] = действие
 const HARD = {
     5:{2:'H',3:'H',4:'H',5:'H',6:'H',7:'H',8:'H',9:'H',10:'H',11:'H'},
     6:{2:'H',3:'H',4:'H',5:'H',6:'H',7:'H',8:'H',9:'H',10:'H',11:'H'},
@@ -476,11 +573,10 @@ function getRecommendation(playerCards, dealerUpcard) {
     if (total === 21 && playerCards.length === 2)
         return { action:'S', ru:'БЛЭКДЖЕК!', explain:'Поздравляю!', total, isSoft };
     if (total > 21)
-        return { action:'S', ru:'ПЕРЕБОР', explain:'Перебор!', total, isSoft:false };
+        return { action:'BUST', ru:'ПЕРЕБОР', explain:'Перебор — рука проиграна', total, isSoft:false };
 
     let action = 'S';
 
-    // Пары
     if (pair && canSplit) {
         const pv = cardValue(playerCards[0]);
         const pa = PAIRS[pv] && PAIRS[pv][dv];
@@ -489,7 +585,6 @@ function getRecommendation(playerCards, dealerUpcard) {
         }
     }
 
-    // Мягкая
     if (isSoft && SOFT[total]) {
         action = SOFT[total][dv] || 'H';
     } else if (HARD[total]) {
@@ -573,45 +668,110 @@ function playerAdvantage() {
 let dealerCards = [];
 let playerCards = [];
 let othersCards = [];
-let allHandCards = []; // для отмены
-let inputMode = 'dealer'; // dealer, player, others
+let allHandCards = [];
+let inputMode = 'dealer';
 let stats = { hands: 0, wins: 0, losses: 0, pushes: 0 };
+let pendingRank = null;
+let cardTracker = {};
+
+// Сплит
+let splitMode = false;
+let splitHands = [[], []];
+let currentSplitHand = 0;
+let splitDeclined = false;
 
 // =====================================================================
 // ФУНКЦИИ UI
 // =====================================================================
 
-function addCard(rank) {
+function selectRank(rank) {
+    pendingRank = rank;
+    updateUI();
+}
+
+function selectSuit(suit) {
+    if (!pendingRank) return;
+    const card = pendingRank + suit;
+    pendingRank = null;
+    addCard(card);
+}
+
+function addCard(card) {
+    const rank = getRank(card);
     let target = inputMode;
     if (inputMode === 'dealer') {
-        dealerCards.push(rank);
+        dealerCards.push(card);
+        if (dealerCards.length === 1) {
+            inputMode = 'player';
+        }
     } else if (inputMode === 'others') {
-        othersCards.push(rank);
+        othersCards.push(card);
+    } else if (splitMode) {
+        target = 'split' + currentSplitHand;
+        splitHands[currentSplitHand].push(card);
     } else {
         target = 'player';
-        playerCards.push(rank);
+        playerCards.push(card);
     }
-    allHandCards.push({ rank, target });
+    allHandCards.push({ card, target });
     addToCounter(rank);
+    cardTracker[card] = (cardTracker[card] || 0) + 1;
     updateUI();
-    // Вибрация
     if (window.Telegram && Telegram.WebApp) {
         try { Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
     }
 }
 
 function undoCard() {
+    if (pendingRank) {
+        pendingRank = null;
+        updateUI();
+        return;
+    }
     if (allHandCards.length === 0) return;
     const lastEntry = allHandCards.pop();
-    removeFromCounter(lastEntry.rank);
+    const rank = getRank(lastEntry.card);
+    removeFromCounter(rank);
+
+    if (cardTracker[lastEntry.card]) {
+        cardTracker[lastEntry.card]--;
+        if (cardTracker[lastEntry.card] <= 0) delete cardTracker[lastEntry.card];
+    }
 
     if (lastEntry.target === 'dealer') {
         dealerCards.pop();
     } else if (lastEntry.target === 'others') {
         othersCards.pop();
+    } else if (lastEntry.target === 'split0') {
+        splitHands[0].pop();
+    } else if (lastEntry.target === 'split1') {
+        splitHands[1].pop();
     } else {
         playerCards.pop();
     }
+    updateUI();
+}
+
+function confirmSplit() {
+    if (playerCards.length !== 2) return;
+    splitMode = true;
+    splitHands = [[playerCards[0]], [playerCards[1]]];
+    currentSplitHand = 0;
+    playerCards = [];
+    splitDeclined = false;
+    inputMode = 'player';
+    updateUI();
+}
+
+function declineSplit() {
+    splitDeclined = true;
+    updateUI();
+}
+
+function switchSplitHand(idx) {
+    if (!splitMode) return;
+    currentSplitHand = idx;
+    inputMode = 'player';
     updateUI();
 }
 
@@ -620,6 +780,11 @@ function newHand() {
     playerCards = [];
     othersCards = [];
     allHandCards = [];
+    pendingRank = null;
+    splitMode = false;
+    splitHands = [[], []];
+    currentSplitHand = 0;
+    splitDeclined = false;
     inputMode = 'dealer';
     updateUI();
 }
@@ -627,10 +792,12 @@ function newHand() {
 function newShoe() {
     runningCount = 0;
     cardsDealt = 0;
+    cardTracker = {};
     newHand();
 }
 
 function setMode(mode) {
+    pendingRank = null;
     inputMode = mode;
     updateUI();
 }
@@ -639,6 +806,7 @@ function changeDecks() {
     totalDecks = parseInt(document.getElementById('decksSelect').value);
     runningCount = 0;
     cardsDealt = 0;
+    cardTracker = {};
     newHand();
 }
 
@@ -651,52 +819,137 @@ function recordResult(result) {
 }
 
 function renderCards(container, cards) {
-    container.innerHTML = cards.length === 0 ? '<span style="color:#555">—</span>' :
-        cards.map(c => `<div class="card-chip">${c}</div>`).join('');
+    if (cards.length === 0) {
+        container.innerHTML = '<span style="color:#555">—</span>';
+        return;
+    }
+    container.innerHTML = cards.map(c => {
+        const rank = getRank(c);
+        const suit = c.replace(rank, '');
+        const isRed = suit === '\u2665' || suit === '\u2666';
+        return `<div class="card-chip">${rank}<span style="color:${isRed ? '#e74c3c' : '#aaa'}">${suit}</span></div>`;
+    }).join('');
+}
+
+function renderHandTotal(el, cards) {
+    if (cards.length === 0) { el.textContent = ''; return; }
+    const {total, isSoft} = handValue(cards);
+    const type = isSoft ? 'soft' : 'hard';
+    if (total === 21 && cards.length === 2) el.textContent = 'БД!';
+    else if (total > 21) el.textContent = `${total} ПЕРЕБОР`;
+    else el.textContent = `${total} (${type})`;
 }
 
 function updateUI() {
-    // Карты
+    // Дилер
     renderCards(document.getElementById('dealerCards'), dealerCards);
-    renderCards(document.getElementById('playerCards'), playerCards);
-    renderCards(document.getElementById('othersCards'), othersCards);
-
-    // Тоталы
     const dt = document.getElementById('dealerTotal');
-    if (dealerCards.length > 0) {
+    if (dealerCards.length > 1) {
+        const {total: dTotal} = handValue(dealerCards);
+        dt.textContent = `(${dTotal})`;
+    } else if (dealerCards.length === 1) {
         dt.textContent = `(${cardValue(dealerCards[0])})`;
     } else dt.textContent = '';
 
-    const pt = document.getElementById('playerTotal');
-    if (playerCards.length > 0) {
-        const {total, isSoft} = handValue(playerCards);
-        const type = isSoft ? 'soft' : 'hard';
-        const pair = isPair(playerCards) ? ' | ПАРА' : '';
-        if (total === 21 && playerCards.length === 2) pt.textContent = 'БД!';
-        else if (total > 21) pt.textContent = `${total} ПЕРЕБОР`;
-        else pt.textContent = `${total} (${type})${pair}`;
-    } else pt.textContent = '';
+    // Мои карты / Сплит
+    const playerRow = document.getElementById('playerRow');
+    const splitRow1 = document.getElementById('splitRow1');
+    const splitRow2 = document.getElementById('splitRow2');
+
+    if (splitMode) {
+        playerRow.style.display = 'none';
+        splitRow1.style.display = 'flex';
+        splitRow2.style.display = 'flex';
+
+        renderCards(document.getElementById('splitCards1'), splitHands[0]);
+        renderCards(document.getElementById('splitCards2'), splitHands[1]);
+        renderHandTotal(document.getElementById('splitTotal1'), splitHands[0]);
+        renderHandTotal(document.getElementById('splitTotal2'), splitHands[1]);
+
+        const label1 = document.getElementById('splitLabel1');
+        const label2 = document.getElementById('splitLabel2');
+        splitRow1.className = 'hand-row split-hand' + (currentSplitHand === 0 ? ' active' : '');
+        splitRow2.className = 'hand-row split-hand' + (currentSplitHand === 1 ? ' active' : '');
+
+        if (currentSplitHand === 0) {
+            label1.textContent = 'Рука 1 \u25b8';
+            label1.className = 'hand-label split-active';
+            label2.textContent = 'Рука 2:';
+            label2.className = 'hand-label split-inactive';
+        } else {
+            label1.textContent = 'Рука 1:';
+            label1.className = 'hand-label split-inactive';
+            label2.textContent = 'Рука 2 \u25b8';
+            label2.className = 'hand-label split-active';
+        }
+
+        // Добавить ПАРА если опять пара в сплит-руке
+        for (let i = 0; i < 2; i++) {
+            const totalEl = document.getElementById('splitTotal' + (i + 1));
+            if (splitHands[i].length === 2 && isPair(splitHands[i])) {
+                totalEl.textContent += ' | ПАРА';
+            }
+        }
+    } else {
+        playerRow.style.display = 'flex';
+        splitRow1.style.display = 'none';
+        splitRow2.style.display = 'none';
+
+        renderCards(document.getElementById('playerCards'), playerCards);
+        const pt = document.getElementById('playerTotal');
+        if (playerCards.length > 0) {
+            const {total, isSoft} = handValue(playerCards);
+            const type = isSoft ? 'soft' : 'hard';
+            const pair = isPair(playerCards) ? ' | ПАРА' : '';
+            if (total === 21 && playerCards.length === 2) pt.textContent = 'БД!';
+            else if (total > 21) pt.textContent = `${total} ПЕРЕБОР`;
+            else pt.textContent = `${total} (${type})${pair}`;
+        } else pt.textContent = '';
+    }
 
     // Чужие
-    const or = document.getElementById('othersRow');
+    const othersRow = document.getElementById('othersRow');
+    renderCards(document.getElementById('othersCards'), othersCards);
     if (othersCards.length > 0) {
-        or.style.display = 'flex';
+        othersRow.style.display = 'flex';
         document.getElementById('othersCount').textContent = `(${othersCards.length} шт)`;
-    } else or.style.display = 'none';
+    } else othersRow.style.display = 'none';
 
     // Рекомендация
     const box = document.getElementById('recBox');
     const actEl = document.getElementById('recAction');
     const expEl = document.getElementById('recExplain');
+    const splitConfirmEl = document.getElementById('splitConfirm');
 
-    if (dealerCards.length >= 1 && playerCards.length >= 2) {
-        const rec = getRecommendation(playerCards, dealerCards[0]);
+    // Определяем текущую руку для рекомендации
+    const currentCards = splitMode ? splitHands[currentSplitHand] : playerCards;
+    const hasEnoughCards = currentCards.length >= 2;
+
+    if (dealerCards.length >= 1 && hasEnoughCards) {
+        const rec = getRecommendation(currentCards, dealerCards[0]);
+        const prefix = splitMode ? `Рука ${currentSplitHand + 1}: ` : '';
         actEl.textContent = `>> ${rec.ru} <<`;
-        expEl.textContent = rec.explain;
+        expEl.textContent = prefix + rec.explain;
         box.className = 'recommendation rec-' +
-            ({H:'hit',S:'stand',D:'double',P:'split'}[rec.action] || 'waiting');
+            ({H:'hit',S:'stand',D:'double',P:'split',BUST:'bust'}[rec.action] || 'waiting');
+
+        // Показать кнопки подтверждения сплита
+        if (rec.action === 'P' && !splitMode && !splitDeclined) {
+            splitConfirmEl.className = 'split-confirm visible';
+        } else {
+            splitConfirmEl.className = 'split-confirm';
+        }
     } else {
-        actEl.textContent = dealerCards.length === 0 ? 'Нажмите карту дилера' : 'Нажмите свои карты';
+        splitConfirmEl.className = 'split-confirm';
+        if (dealerCards.length === 0) {
+            actEl.textContent = 'Нажмите карту дилера';
+        } else if (currentCards.length === 0) {
+            actEl.textContent = splitMode ? `Рука ${currentSplitHand + 1}: добавьте карту` : 'Нажмите 2 свои карты';
+        } else if (currentCards.length === 1) {
+            actEl.textContent = splitMode ? `Рука ${currentSplitHand + 1}: ещё 1 карту` : 'Нажмите ещё 1 свою карту';
+        } else {
+            actEl.textContent = 'Введите карты';
+        }
         expEl.textContent = '';
         box.className = 'recommendation rec-waiting';
     }
@@ -707,6 +960,24 @@ function updateUI() {
         const ml = m.toLowerCase();
         el.className = 'mode-btn' + (inputMode === ml ? ` active-${ml}` : '');
     });
+
+    // Выбор масти
+    const suitRow = document.getElementById('suitRow');
+    const cardGrid = document.getElementById('cardGrid');
+    const cardGridRow2 = document.getElementById('cardGridRow2');
+    if (pendingRank) {
+        suitRow.className = 'suit-row visible';
+        document.getElementById('suitS').textContent = pendingRank + '\u2660';
+        document.getElementById('suitC').textContent = pendingRank + '\u2663';
+        document.getElementById('suitH').textContent = pendingRank + '\u2665';
+        document.getElementById('suitD').textContent = pendingRank + '\u2666';
+        cardGrid.classList.add('dimmed');
+        cardGridRow2.classList.add('dimmed');
+    } else {
+        suitRow.className = 'suit-row';
+        cardGrid.classList.remove('dimmed');
+        cardGridRow2.classList.remove('dimmed');
+    }
 
     // Счётчик
     const rc = runningCount;
@@ -730,6 +1001,22 @@ function updateUI() {
     advEl.textContent = (adv >= 0 ? '+' : '') + adv.toFixed(1) + '%';
     advEl.className = 'counter-value ' + (adv >= 0 ? 'positive' : 'negative');
 
+    // Оценка колод
+    const estimateEl = document.getElementById('deckEstimate');
+    let maxCount = 0, maxCard = '';
+    for (const card in cardTracker) {
+        if (cardTracker[card] > maxCount) {
+            maxCount = cardTracker[card];
+            maxCard = card;
+        }
+    }
+    if (maxCount >= 2) {
+        estimateEl.textContent = `Мин. колод: ${maxCount} (${maxCard} выпала ${maxCount}\u00d7)`;
+        estimateEl.style.display = 'block';
+    } else {
+        estimateEl.style.display = 'none';
+    }
+
     // Статистика
     const s = stats;
     if (s.hands > 0) {
@@ -745,7 +1032,6 @@ function updateUI() {
 // ИНИЦИАЛИЗАЦИЯ
 // =====================================================================
 
-// Telegram Mini App
 if (window.Telegram && Telegram.WebApp) {
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
