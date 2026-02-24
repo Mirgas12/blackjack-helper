@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Блэкджек Помощник</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--tg-theme-bg-color, #1a1a2e);
+    color: var(--tg-theme-text-color, #e0e0e0);
+    min-height: 100vh;
+    padding: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.container { max-width: 420px; margin: 0 auto; }
+
+h1 {
+    text-align: center;
+    font-size: 18px;
+    color: #f1c40f;
+    padding: 8px 0;
+    letter-spacing: 1px;
+}
+
+/* Секции */
+.section {
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+
+.section-title {
+    font-size: 11px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+/* Карты дилера/игрока */
+.hand-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    min-height: 32px;
+}
+
+.hand-label {
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 55px;
+}
+
+.hand-label.dealer { color: #e74c3c; }
+.hand-label.player { color: #2ecc71; }
+.hand-label.others { color: #9b59b6; }
+
+.hand-cards {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.card-chip {
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 14px;
+    font-weight: 700;
+    min-width: 28px;
+    text-align: center;
+}
+
+.hand-total {
+    margin-left: auto;
+    font-size: 13px;
+    color: #bdc3c7;
+}
+
+/* Рекомендация */
+.recommendation {
+    text-align: center;
+    padding: 14px 10px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.05);
+    transition: all 0.2s;
+}
+
+.rec-action {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.rec-explain {
+    font-size: 12px;
+    color: #bdc3c7;
+    margin-top: 4px;
+}
+
+.rec-hit { border: 2px solid #2ecc71; }
+.rec-hit .rec-action { color: #2ecc71; }
+
+.rec-stand { border: 2px solid #e74c3c; }
+.rec-stand .rec-action { color: #e74c3c; }
+
+.rec-double { border: 2px solid #3498db; }
+.rec-double .rec-action { color: #3498db; }
+
+.rec-split { border: 2px solid #f39c12; }
+.rec-split .rec-action { color: #f39c12; }
+
+.rec-waiting { border: 1px solid rgba(255,255,255,0.1); }
+.rec-waiting .rec-action { color: #7f8c8d; font-size: 16px; }
+
+/* Счётчик */
+.counter-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.counter-item {
+    flex: 1;
+    text-align: center;
+}
+
+.counter-value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.counter-label {
+    font-size: 10px;
+    color: #7f8c8d;
+}
+
+.positive { color: #2ecc71; }
+.negative { color: #e74c3c; }
+.neutral { color: #3498db; }
+
+/* Режим ввода */
+.mode-buttons {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.05);
+    color: #7f8c8d;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mode-btn.active-dealer { border-color: #e74c3c; color: #e74c3c; background: rgba(231,76,60,0.1); }
+.mode-btn.active-player { border-color: #2ecc71; color: #2ecc71; background: rgba(46,204,113,0.1); }
+.mode-btn.active-others { border-color: #9b59b6; color: #9b59b6; background: rgba(155,89,182,0.1); }
+
+/* Кнопки карт */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.card-btn {
+    padding: 10px 0;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.1s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.card-btn:active { transform: scale(0.93); }
+
+/* Hi-Lo цвета */
+.card-lo { background: rgba(46,204,113,0.15); color: #2ecc71; } /* +1 */
+.card-mid { background: rgba(255,255,255,0.05); color: #bdc3c7; } /* 0 */
+.card-hi { background: rgba(231,76,60,0.15); color: #e74c3c; } /* -1 */
+
+.card-grid-row2 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+/* Управление */
+.ctrl-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.ctrl-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255,255,255,0.08);
+    color: #bdc3c7;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ctrl-btn:active { background: rgba(255,255,255,0.15); }
+
+/* Результат руки */
+.result-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.result-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid;
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.result-btn.win { color: #2ecc71; border-color: #2ecc71; }
+.result-btn.loss { color: #e74c3c; border-color: #e74c3c; }
+.result-btn.push { color: #f39c12; border-color: #f39c12; }
+.result-btn:active { opacity: 0.7; }
+
+/* Колоды */
+.decks-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.decks-row label { font-size: 12px; color: #7f8c8d; }
+
+.decks-select {
+    background: rgba(255,255,255,0.08);
+    color: #e0e0e0;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+}
+
+/* Статистика */
+.stats {
+    text-align: center;
+    font-size: 12px;
+    color: #7f8c8d;
+    padding: 6px 0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>БЛЭКДЖЕК ПОМОЩНИК</h1>
+
+    <!-- Руки -->
+    <div class="section">
+        <div class="hand-row">
+            <span class="hand-label dealer">Дилер:</span>
+            <div class="hand-cards" id="dealerCards"></div>
+            <span class="hand-total" id="dealerTotal"></span>
+        </div>
+        <div class="hand-row">
+            <span class="hand-label player">Мои:</span>
+            <div class="hand-cards" id="playerCards"></div>
+            <span class="hand-total" id="playerTotal"></span>
+        </div>
+        <div class="hand-row" id="othersRow" style="display:none">
+            <span class="hand-label others">Чужие:</span>
+            <div class="hand-cards" id="othersCards"></div>
+            <span class="hand-total" id="othersCount"></span>
+        </div>
+    </div>
+
+    <!-- Рекомендация -->
+    <div class="recommendation rec-waiting" id="recBox">
+        <div class="rec-action" id="recAction">Введите карты</div>
+        <div class="rec-explain" id="recExplain"></div>
+    </div>
+
+    <!-- Счётчик -->
+    <div class="section">
+        <div class="counter-row">
+            <div class="counter-item">
+                <div class="counter-value neutral" id="rcValue">+0</div>
+                <div class="counter-label">RC</div>
+            </div>
+            <div class="counter-item">
+                <div class="counter-value neutral" id="tcValue">+0.0</div>
+                <div class="counter-label">TC</div>
+            </div>
+            <div class="counter-item">
+                <div class="counter-value" id="decksRemain" style="color:#7f8c8d">4.0</div>
+                <div class="counter-label">Колод</div>
+            </div>
+            <div class="counter-item">
+                <div class="counter-value" id="betAdvice" style="color:#f39c12">1x</div>
+                <div class="counter-label">Ставка</div>
+            </div>
+            <div class="counter-item">
+                <div class="counter-value negative" id="advantage">-0.5%</div>
+                <div class="counter-label">Перевес</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Режим ввода -->
+    <div class="mode-buttons">
+        <div class="mode-btn active-dealer" id="modeDealer" onclick="setMode('dealer')">Дилер</div>
+        <div class="mode-btn" id="modePlayer" onclick="setMode('player')">Мои</div>
+        <div class="mode-btn" id="modeOthers" onclick="setMode('others')">Чужие</div>
+    </div>
+
+    <!-- Кнопки карт -->
+    <div class="card-grid">
+        <div class="card-btn card-lo" onclick="addCard('2')">2</div>
+        <div class="card-btn card-lo" onclick="addCard('3')">3</div>
+        <div class="card-btn card-lo" onclick="addCard('4')">4</div>
+        <div class="card-btn card-lo" onclick="addCard('5')">5</div>
+        <div class="card-btn card-lo" onclick="addCard('6')">6</div>
+        <div class="card-btn card-mid" onclick="addCard('7')">7</div>
+        <div class="card-btn card-mid" onclick="addCard('8')">8</div>
+        <div class="card-btn card-mid" onclick="addCard('9')">9</div>
+        <div class="card-btn card-hi" onclick="addCard('10')">10</div>
+    </div>
+    <div class="card-grid-row2">
+        <div class="card-btn card-hi" onclick="addCard('J')">J</div>
+        <div class="card-btn card-hi" onclick="addCard('Q')">Q</div>
+        <div class="card-btn card-hi" onclick="addCard('K')">K</div>
+        <div class="card-btn card-hi" onclick="addCard('A')">A</div>
+    </div>
+
+    <!-- Управление -->
+    <div class="ctrl-row">
+        <button class="ctrl-btn" onclick="newHand()">Новая рука</button>
+        <button class="ctrl-btn" onclick="undoCard()">Отмена</button>
+        <button class="ctrl-btn" onclick="newShoe()">Новый шу</button>
+    </div>
+
+    <!-- Результат + настройки -->
+    <div class="section">
+        <div class="result-row" style="margin-bottom:8px">
+            <button class="result-btn win" onclick="recordResult('win')">Выиграл</button>
+            <button class="result-btn loss" onclick="recordResult('loss')">Проиграл</button>
+            <button class="result-btn push" onclick="recordResult('push')">Ничья</button>
+        </div>
+        <div class="decks-row">
+            <label>Колод в шу:</label>
+            <select class="decks-select" id="decksSelect" onchange="changeDecks()">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="4" selected>4</option>
+                <option value="6">6</option>
+                <option value="8">8</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats" id="statsLine">Сессия: 0 рук</div>
+</div>
+
+<script>
+// =====================================================================
+// СТРАТЕГИЯ
+// =====================================================================
+
+function cardValue(rank) {
+    rank = rank.toUpperCase().trim();
+    if (['10','J','Q','K','T'].includes(rank)) return 10;
+    if (['A','ACE'].includes(rank)) return 11;
+    const n = parseInt(rank);
+    return (n >= 2 && n <= 9) ? n : 0;
+}
+
+function handValue(cards) {
+    let values = cards.map(cardValue);
+    let total = values.reduce((a,b) => a+b, 0);
+    let aces = values.filter(v => v === 11).length;
+    while (total > 21 && aces > 0) { total -= 10; aces--; }
+    return { total, isSoft: aces > 0 };
+}
+
+function isPair(cards) {
+    return cards.length === 2 && cardValue(cards[0]) === cardValue(cards[1]);
+}
+
+// Таблицы: [сумма][карта_дилера] = действие
+const HARD = {
+    5:{2:'H',3:'H',4:'H',5:'H',6:'H',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    6:{2:'H',3:'H',4:'H',5:'H',6:'H',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    7:{2:'H',3:'H',4:'H',5:'H',6:'H',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    8:{2:'H',3:'H',4:'H',5:'H',6:'H',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    9:{2:'H',3:'D',4:'D',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    10:{2:'D',3:'D',4:'D',5:'D',6:'D',7:'D',8:'D',9:'D',10:'H',11:'H'},
+    11:{2:'D',3:'D',4:'D',5:'D',6:'D',7:'D',8:'D',9:'D',10:'D',11:'H'},
+    12:{2:'H',3:'H',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    13:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    14:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    15:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    16:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    17:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+    18:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+    19:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+    20:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+    21:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+};
+
+const SOFT = {
+    13:{2:'H',3:'H',4:'H',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    14:{2:'H',3:'H',4:'H',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    15:{2:'H',3:'H',4:'D',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    16:{2:'H',3:'H',4:'D',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    17:{2:'H',3:'D',4:'D',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    18:{2:'D',3:'D',4:'D',5:'D',6:'D',7:'S',8:'S',9:'H',10:'H',11:'H'},
+    19:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+    20:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+    21:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+};
+
+const PAIRS = {
+    2:{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'H',9:'H',10:'H',11:'H'},
+    3:{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'H',9:'H',10:'H',11:'H'},
+    4:{2:'H',3:'H',4:'H',5:'P',6:'P',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    5:{2:'D',3:'D',4:'D',5:'D',6:'D',7:'D',8:'D',9:'D',10:'H',11:'H'},
+    6:{2:'P',3:'P',4:'P',5:'P',6:'P',7:'H',8:'H',9:'H',10:'H',11:'H'},
+    7:{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'H',9:'H',10:'H',11:'H'},
+    8:{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'P',9:'P',10:'P',11:'P'},
+    9:{2:'P',3:'P',4:'P',5:'P',6:'P',7:'S',8:'P',9:'P',10:'S',11:'S'},
+    10:{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S',11:'S'},
+    11:{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'P',9:'P',10:'P',11:'P'},
+};
+
+const ACTION_RU = { H:'ЕЩЁ', S:'ХВАТИТ', D:'ДАБЛ', P:'СПЛИТ' };
+
+function getRecommendation(playerCards, dealerUpcard) {
+    const dv = cardValue(dealerUpcard);
+    const {total, isSoft} = handValue(playerCards);
+    const pair = isPair(playerCards);
+    const canDouble = playerCards.length === 2;
+    const canSplit = pair;
+
+    if (total === 21 && playerCards.length === 2)
+        return { action:'S', ru:'БЛЭКДЖЕК!', explain:'Поздравляю!', total, isSoft };
+    if (total > 21)
+        return { action:'S', ru:'ПЕРЕБОР', explain:'Перебор!', total, isSoft:false };
+
+    let action = 'S';
+
+    // Пары
+    if (pair && canSplit) {
+        const pv = cardValue(playerCards[0]);
+        const pa = PAIRS[pv] && PAIRS[pv][dv];
+        if (pa === 'P') {
+            return { action:'P', ru:ACTION_RU.P, explain:pairExplain(pv, dv), total, isSoft };
+        }
+    }
+
+    // Мягкая
+    if (isSoft && SOFT[total]) {
+        action = SOFT[total][dv] || 'H';
+    } else if (HARD[total]) {
+        action = HARD[total][dv] || 'H';
+    } else {
+        action = total >= 17 ? 'S' : 'H';
+    }
+
+    if (action === 'D' && !canDouble) action = 'H';
+
+    const ht = isSoft ? 'Soft' : 'Hard';
+    const ds = dv === 11 ? 'A' : dv;
+    let explain = '';
+    if (action === 'S' && total >= 17) explain = `${ht} ${total} — сильная рука, стоим`;
+    else if (action === 'S' && dv <= 6) explain = `${ht} ${total} vs ${ds} — дилер слабый, стоим`;
+    else if (action === 'H' && dv >= 7) explain = `${ht} ${total} vs ${ds} — дилер сильный, берём`;
+    else if (action === 'H') explain = `${ht} ${total} vs ${ds} — рука слабая, берём`;
+    else if (action === 'D') explain = `${ht} ${total} vs ${ds} — выгодная позиция, удваиваем!`;
+    else explain = `${ht} ${total} vs ${ds}`;
+
+    return { action, ru: ACTION_RU[action], explain, total, isSoft };
+}
+
+function pairExplain(pv, dv) {
+    if (pv === 11) return 'Тузы — ВСЕГДА разделяй';
+    if (pv === 8) return 'Восьмёрки — ВСЕГДА разделяй';
+    return `Разделяй пару против дилера ${dv === 11 ? 'A' : dv}`;
+}
+
+// =====================================================================
+// Hi-Lo СЧЁТЧИК
+// =====================================================================
+
+const HI_LO = {};
+[2,3,4,5,6].forEach(v => HI_LO[v] = 1);
+[7,8,9].forEach(v => HI_LO[v] = 0);
+[10,11].forEach(v => HI_LO[v] = -1);
+
+let totalDecks = 4;
+let runningCount = 0;
+let cardsDealt = 0;
+
+function addToCounter(rank) {
+    const v = cardValue(rank);
+    runningCount += (HI_LO[v] || 0);
+    cardsDealt++;
+}
+
+function removeFromCounter(rank) {
+    const v = cardValue(rank);
+    runningCount -= (HI_LO[v] || 0);
+    cardsDealt = Math.max(0, cardsDealt - 1);
+}
+
+function trueCount() {
+    const dr = Math.max((totalDecks * 52 - cardsDealt) / 52, 0.25);
+    return runningCount / dr;
+}
+
+function decksRemaining() {
+    return Math.max((totalDecks * 52 - cardsDealt) / 52, 0);
+}
+
+function betAdvice() {
+    const tc = trueCount();
+    if (tc <= 0) return { text: '1x', mult: 1 };
+    if (tc < 2) return { text: '2x', mult: 2 };
+    if (tc < 4) return { text: '3x', mult: 3 };
+    if (tc < 6) return { text: '5x', mult: 5 };
+    return { text: '8x!', mult: 8 };
+}
+
+function playerAdvantage() {
+    return -0.5 + trueCount() * 0.5;
+}
+
+// =====================================================================
+// СОСТОЯНИЕ
+// =====================================================================
+
+let dealerCards = [];
+let playerCards = [];
+let othersCards = [];
+let allHandCards = []; // для отмены
+let inputMode = 'dealer'; // dealer, player, others
+let stats = { hands: 0, wins: 0, losses: 0, pushes: 0 };
+
+// =====================================================================
+// ФУНКЦИИ UI
+// =====================================================================
+
+function addCard(rank) {
+    if (inputMode === 'dealer' && dealerCards.length === 0) {
+        dealerCards.push(rank);
+        inputMode = 'player';
+    } else if (inputMode === 'others') {
+        othersCards.push(rank);
+    } else {
+        playerCards.push(rank);
+        inputMode = 'player';
+    }
+    allHandCards.push(rank);
+    addToCounter(rank);
+    updateUI();
+    // Вибрация
+    if (window.Telegram && Telegram.WebApp) {
+        try { Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
+    }
+}
+
+function undoCard() {
+    if (allHandCards.length === 0) return;
+    const removed = allHandCards.pop();
+    removeFromCounter(removed);
+
+    if (inputMode === 'others' && othersCards.length > 0) {
+        othersCards.pop();
+    } else if (playerCards.length > 0) {
+        playerCards.pop();
+    } else if (dealerCards.length > 0) {
+        dealerCards.pop();
+        inputMode = 'dealer';
+    }
+    updateUI();
+}
+
+function newHand() {
+    dealerCards = [];
+    playerCards = [];
+    othersCards = [];
+    allHandCards = [];
+    inputMode = 'dealer';
+    updateUI();
+}
+
+function newShoe() {
+    runningCount = 0;
+    cardsDealt = 0;
+    newHand();
+}
+
+function setMode(mode) {
+    inputMode = mode;
+    updateUI();
+}
+
+function changeDecks() {
+    totalDecks = parseInt(document.getElementById('decksSelect').value);
+    runningCount = 0;
+    cardsDealt = 0;
+    newHand();
+}
+
+function recordResult(result) {
+    stats.hands++;
+    if (result === 'win') stats.wins++;
+    else if (result === 'loss') stats.losses++;
+    else stats.pushes++;
+    newHand();
+}
+
+function renderCards(container, cards) {
+    container.innerHTML = cards.length === 0 ? '<span style="color:#555">—</span>' :
+        cards.map(c => `<div class="card-chip">${c}</div>`).join('');
+}
+
+function updateUI() {
+    // Карты
+    renderCards(document.getElementById('dealerCards'), dealerCards);
+    renderCards(document.getElementById('playerCards'), playerCards);
+    renderCards(document.getElementById('othersCards'), othersCards);
+
+    // Тоталы
+    const dt = document.getElementById('dealerTotal');
+    if (dealerCards.length > 0) {
+        dt.textContent = `(${cardValue(dealerCards[0])})`;
+    } else dt.textContent = '';
+
+    const pt = document.getElementById('playerTotal');
+    if (playerCards.length > 0) {
+        const {total, isSoft} = handValue(playerCards);
+        const type = isSoft ? 'soft' : 'hard';
+        const pair = isPair(playerCards) ? ' | ПАРА' : '';
+        if (total === 21 && playerCards.length === 2) pt.textContent = 'БД!';
+        else if (total > 21) pt.textContent = `${total} ПЕРЕБОР`;
+        else pt.textContent = `${total} (${type})${pair}`;
+    } else pt.textContent = '';
+
+    // Чужие
+    const or = document.getElementById('othersRow');
+    if (othersCards.length > 0) {
+        or.style.display = 'flex';
+        document.getElementById('othersCount').textContent = `(${othersCards.length} шт)`;
+    } else or.style.display = 'none';
+
+    // Рекомендация
+    const box = document.getElementById('recBox');
+    const actEl = document.getElementById('recAction');
+    const expEl = document.getElementById('recExplain');
+
+    if (dealerCards.length >= 1 && playerCards.length >= 2) {
+        const rec = getRecommendation(playerCards, dealerCards[0]);
+        actEl.textContent = `>> ${rec.ru} <<`;
+        expEl.textContent = rec.explain;
+        box.className = 'recommendation rec-' +
+            ({H:'hit',S:'stand',D:'double',P:'split'}[rec.action] || 'waiting');
+    } else {
+        actEl.textContent = dealerCards.length === 0 ? 'Нажмите карту дилера' : 'Нажмите свои карты';
+        expEl.textContent = '';
+        box.className = 'recommendation rec-waiting';
+    }
+
+    // Режимы
+    ['Dealer','Player','Others'].forEach(m => {
+        const el = document.getElementById('mode' + m);
+        const ml = m.toLowerCase();
+        el.className = 'mode-btn' + (inputMode === ml ? ` active-${ml}` : '');
+    });
+
+    // Счётчик
+    const rc = runningCount;
+    const tc = trueCount();
+    const dr = decksRemaining();
+    const ba = betAdvice();
+    const adv = playerAdvantage();
+
+    const rcEl = document.getElementById('rcValue');
+    rcEl.textContent = (rc >= 0 ? '+' : '') + rc;
+    rcEl.className = 'counter-value ' + (rc > 0 ? 'positive' : rc < 0 ? 'negative' : 'neutral');
+
+    const tcEl = document.getElementById('tcValue');
+    tcEl.textContent = (tc >= 0 ? '+' : '') + tc.toFixed(1);
+    tcEl.className = 'counter-value ' + (tc > 0 ? 'positive' : tc < 0 ? 'negative' : 'neutral');
+
+    document.getElementById('decksRemain').textContent = dr.toFixed(1);
+    document.getElementById('betAdvice').textContent = ba.text;
+
+    const advEl = document.getElementById('advantage');
+    advEl.textContent = (adv >= 0 ? '+' : '') + adv.toFixed(1) + '%';
+    advEl.className = 'counter-value ' + (adv >= 0 ? 'positive' : 'negative');
+
+    // Статистика
+    const s = stats;
+    if (s.hands > 0) {
+        const wr = (s.wins / s.hands * 100).toFixed(0);
+        document.getElementById('statsLine').textContent =
+            `Сессия: ${s.hands} рук | W:${s.wins} L:${s.losses} P:${s.pushes} | ${wr}%`;
+    } else {
+        document.getElementById('statsLine').textContent = 'Сессия: 0 рук';
+    }
+}
+
+// =====================================================================
+// ИНИЦИАЛИЗАЦИЯ
+// =====================================================================
+
+// Telegram Mini App
+if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+}
+
+updateUI();
+</script>
+</body>
+</html>
